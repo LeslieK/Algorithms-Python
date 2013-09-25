@@ -1,0 +1,11 @@
+Python Special Methods
+
+Instead of being called directly by your code (like normal methods), special methods are called for you by Python in particular circumstances or when specific syntax is used.
+
+Special methods mean that any class can store key/value pairs like a dictionary, just by defining the __setitem__ method. Any class can act like a sequence, just by defining the __getitem__ method. Any class that defines the __cmp__ method can be compared with ==. And if your class represents something that has a length, don't define a GetLength method; define the __len__ method and use len(instance).
+
+The __call__ method lets a class act like a function, allowing you to call a class instance directly. And there are other special methods that allow classes to have read-only and write-only data attributes.
+
+Python has a lot of other special methods. There's a whole set of them that let classes act like numbers, allowing you to add, subtract, and do other arithmetic operations on class instances. (The canonical example of this is a class that represents complex numbers, numbers with both real and imaginary components.)
+
+

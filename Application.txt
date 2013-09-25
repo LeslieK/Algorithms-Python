@@ -1,0 +1,39 @@
+Most fascinating thing I Learned in the past month
+Speaking about the Trayvon Martin case, Maya Wiley, the Founder and President of Center for Social Inclusion, explained "shooter bias". She explained that American civil rights laws were written at a time when racism happened at a conscious level. Our laws and courts only account for conscious intent, not implicit biases.
+
+The data show that a Black man is more likely to be killed (by Whites and Blacks) reaching for his wallet than a White man is reaching for a gun. "Shooter bias" is caused by implicit bias -- prejudices that are part of our subconscious.
+
+Wiley explains that "our laws and courts only account for conscious intent, not implicit biases. But since 98% of our actions are subconsciously motivated, our public conversations about race and bias should reflect that nuance."
+
+The Voting Rights Act was gutted by the Supreme Court based on the fact that the rascism that existed in 1975 no longer exists today, so Section 5 is no longer needed. Now, obstacles to block the voting rights of minorities are couched in terms of voter ID laws, with the purpose of preventing fraud, even though the data does not support the claims. 
+
+For a just society in America, we have to re-write our civil rights and voting rights laws to include the reality of implicit biases.
+******************************
+In 2 years:
+I want to write code to implement machine learning algorithms on big data.
+This includes being able to write code to visualize the data set.
+I would like to have enough skills to succeed at a kaggle competition!
+
+Some ideas:
+1. plot health data from a local community onto a map of the community and determine if there are any disease "hot spots"
+2. use my skills to analyze data that could help people in developing countries
+3. contribute to OSHERA, the open source project for electronic health records
+*******************************
+Code I wrote from scratch:
+https://github.com/LeslieK/HackerSchool
+Look in the folder TowerOfHanoi. I wrote Hanoi.py to solve the facebook sample puzzle.
+*******************************
+Why do you want to go at Hacker School?
+I want to code all day, every day, among a community of coders. I want to work as hard as I can with one goal: to become a better programmer.
+1 year ago I voluntarily left my job as a systems engineer to take online computer science classes (udacity and Coursera). I took a Programming Languages class and, based on the recommendation of the professor, I signed up for the Coursera Compilers class. Plus, I wanted to learn java. Could I write a compiler in java?
+I was a novice java programmer. I submitted all the work on time and my code passed all tests. At the end of the class I was a better java programmer, I was a pretty good debugger, and I had confidence that I could actually do this. However, parts of my code were not well-written. I did not have the opportunity to work alongside other coders or to have my code reviewed.
+My programming consists of class assignments. Now I just want to code. I've acquired knowledge; now I need a lot more coding experience.  In a sense, I spent the last year at a hacker school of 1. Then I learned about the official Hacker School. 
+Mel Chua  talks about a "zone of proximal development" by describing how we learn to ride a bike. 1. watch 2. somebody pushes you. 3. wheeeeeeeeeee
+I'm ready to take off my training wheels and get going.
+*******************************
+What do you want to work on?
+1. Goal: to understand the python language better. I would like to be able to use python with modules (scikit) and other languages (integration with octave) to solve machine learning problems and to visualize data (plotting modules). 
+2. Learn and do:  test-driven development; learn the ipython debugger
+3. Some programming ideas: write code to solve the interview questions from my Algorithms class. By programming, I will learn a particular algorithm at a much deeper level. Then I can turn on my creative juices and apply the algorithm to a problem that on the surface, might appear to have nothing to do with the algorithm. Transforming a problem into a form that can be solved by a well-understood algorithm takes brilliance and a skill set that I aspire to. And along the way, I will learn python better.
+4. Eventually: I want to tackle the Titanic kaggle competition.
+

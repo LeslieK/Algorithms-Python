@@ -1,0 +1,250 @@
+Python Data Model
+
+Some Definitions:
+Class attribute: 
+	an attribute of the class; available before creating any instance of the class
+	Class attributes are available both through direct reference to the class and through any instance of the class.
+	in java: static variables
+
+bound method: a method that is bound to an instance; that instance is passed as the first argument whenever the method is called
+
+unbound method: a method that is not bound to an instance; it is delegated to its class
+	callables that are attributes of a class (as opposed to an instance) are unbound 
+	ex: list.__len__(mylist) - '__len__' is an unbound method; it is not bound to a list; it is called from the builtin list class
+		list.append(mylist, 'c') 'append' is an unbound method; it is not bound to a list
+		mylist.append('c') is an example of a bound method since method 'append' is bound to instance 'mylist'
+
+static method: a method that does not receive an implicit first argument - The body of foo is determined by the class in which foo is defined ('static'). This means you can put a function inside a class but you can't access an instance of that class in the function.
+
+	class C(object):
+		def foo(x, y): 
+			print "staticmethod", x, y
+		foo = staticmethod(foo)
+
+	C.foo(1, 2) and C().foo(1, 2) both invoke foo. The first way of calling foo is sufficient. No instance is required. If an instance is used, it is only used to find the class that defines the static method.
+
+class method: a method that receives an implicit first argument - the class on which it is invoked (which is not necessarily the class in which it is defined; the invoked class could be a subclass of the class in which it was defined; the invoked class is determined at runtime) (ex: e0.foo(e1, e2) ; The dynamic type of e0 determines the method body of foo; dynamic dispatch in COOL)
+Since the class is the first argument to the method, the class and its *properties* can be referenced inside the method.
+
+	class Z(object):
+		def foo(cls, y):
+			print "classmethod", cls, y
+		foo = classmethod(foo)
+
+	Z.foo(1)
+	Z().foo(1)
+
+class Date(object):
+
+	def __init__(self, day=0, month=0, year=0):
+		self.day = day
+		self.month = month
+		self.year = year
+
+	@classmethod
+	def from_string(cls, date_as_string):
+		day, month, year = map(int, date_as_string.split('-'))
+		date1 = cls(day, month, year)
+		return date1
+
+meta-attributes: class attributes of a metaclass
+	Meta-attributes differ from regular attributes since they are not transmitted to the instances of the instances.
+
+type object:
+	used to represent ADT in programs (user-defined and python-defined) (In COOL, this is a class.)
+	it can be subclassed (you can create a new type object that extends the existing type object; the existing object is a base of the new object)
+	it can be instantiated (you can create a new object that is an instance of the existing type object; the existing type is the __class__ of the new object)
+	the type of a type object is 'type'
+	sometimes called 'type'; sometimes called 'class' : 'type' is equivalent to 'class' in python >= 2.3
+
+non-type object:
+	cannot create instances
+	cannot be sublclassed
+	created by instantiating a type object
+
+object-object relationships:
+	subtype-type - issubtype(A, B)
+	instance-type - isinstance(c, C)
+
+	The relationships between objects determine how attribute access on the object works. For example, when we say 
+	objectname.attributename, 
+	which object do we end up with? It all depends on objectname, its type, and its bases (if they exist).
+
+Types: (import types; types.<tab key> to get all types)
+
+None - a singleton with a single value; accessed through the builtin name None
+
+numbers.Number - immutable
+	numbers.Integral
+		plain integer - These represent numbers in the range -2147483648 through 2147483647. (The range may be larger on machines with a larger natural word size, but not smaller.) When the result of an operation would fall outside this range, the result is normally returned as a long integer (in some cases, the exception OverflowError is raised instead). For the purpose of shift and mask operations, integers are assumed to have a binary, 2’s complement notation using 32 or more bits, and hiding no bits from the user (i.e., all 4294967296 different bit patterns correspond to different values).
+
+		long integer - These represent numbers in an unlimited range, subject to available (virtual) memory only. For the purpose of shift and mask operations, a binary representation is assumed, and negative numbers are represented in a variant of 2’s complement which gives the illusion of an infinite string of sign bits extending to the left.
+
+		boolean - These represent the truth values False and True. The two objects representing the values False and True are the only Boolean objects. The Boolean type is a subtype of plain integers, and Boolean values behave like the values 0 and 1, respectively, in almost all contexts, the exception being that when converted to a string, the strings "False" or "True" are returned, respectively.
+
+	numbers.Real (float) - These represent machine-level double precision floating point numbers. You are at the mercy of the underlying machine architecture (and C or Java implementation) for the accepted range and handling of overflow. 
+
+	numbers.Complex - double precision floating point numbers. The same caveats apply as for floating point numbers. The real and imaginary parts of a complex number z can be retrieved through the read-only attributes z.real and z.imag.
+
+Immutable Sequence Types:
+	String - sequence of characters; a character is a string of 1 item represented by (at least) an 8-bit byte
+	
+	Unicode - sequence of Unicode code units; Unicode code unit is represented by a Unicode object of 1 item represented by a 16-bit or 32-bit value representing a Unicode ordinal. unichr() and ord() convert between code units and the nonnegative integers representing the Unicode ordinals. Conversion from/to other encodings are possible through the Unicode method encode() and the builtin function unicode()
+
+	Tuple - sequence of arbitrary python objects
+
+Mutable Sequence Types
+	List - sequence of arbitrary python objects
+	extension module provides array type
+
+Set Types:
+	Set - a mutable set
+
+	Frozen set - an immutable set
+
+Mapping Types:
+	dictionary - finite set of objects indexed by a key (immutable)
+
+	extension modules provide mapping types: dbm, gdbm, bsddb
+
+Callable Types:
+	user-defined function object: created by a function definition
+		Special attributes: 
+		__doc__
+		__name__ 
+		__module__ 
+		__code__ 
+		__globals__ (ns in which func was defined), 
+		__dict__ (ns of arbitrary func attributes), 
+		__closure__ (bindings for the func's free variables)
+	user-defined method object: combines a class, a class instance (or None) and any callable object (normally a user-defined function)
+		Special attributes: 
+			__self__ = class instance object
+			__func__ = func object
+			__class__ = class of __self__ for bound methods; class that asked for the method for unbound methods
+			__doc__ = the method's documentation
+			__name__ = method name
+			__module__ = name of the module the method was defined in, or None if unavailable
+	generator function object:
+	builtin function object: 
+	builtin method object:
+	class type (new-style class) - this object acts as a factory for new instances of itself (class calls its __new__() method, and calls __init__() to initialize the new instance)
+	classic class/ class object - (old-style) when a class object is called, a new class instance is created and returned (class calls its __init__() method)
+	class instance - this is callable only when the class has a __call__() method; x(args) = x.__call__(args)
+
+Module:
+	module object - namespace implemented by a dictionary object, __dict__
+
+Class (class type (new-style) and class object (old-style)):
+	created by class definition; a class has a namespace implemented by a dictionary object
+	Class attribute assignments update the class’s dictionary, never the dictionary of a base class.
+	A class object can be called to yield a class instance (see below).
+	Special attributes: 
+		__name__ is the class name; 
+		__module__ is the module name in which the class was defined; 
+		__dict__ is the dictionary containing the class’s namespace; 
+		__bases__ is a tuple (possibly empty or a singleton) containing the base classes, in the order of their occurrence in the base class list; 
+		__doc__ is the class’s documentation string, or None if undefined.
+
+	old-style
+	Class attribute references are translated to lookups in this dictionary, e.g., C.x is translated to C.__dict__["x"] 
+	For old-style classes, the search is depth-first, left-to-right in the order of occurrence in the base class list.
+
+	new-style
+	(for new-style classes there are a number of hooks which allow for other means of locating attributes) 
+	New-style classes use the more complex C3 method resolution order which behaves correctly even in the presence of ‘diamond’ inheritance structures where there are multiple inheritance paths leading back to a common ancestor.
+
+
+Class instance:
+	created by calling a class object; __new__ creates the object and returns it; __init__ is called immediately **after** an instance of the class is created; __init__ initializes the object created by __new__ 
+		self (as in __init__(self, )) - refers to the newly created instance
+		self (as in method(self, ..)) - refers to the instance whose method was called
+	Searching for an attribute of an instance:
+	A class instance has a namespace implemented as a dictionary which is the first place in which attribute references are searched. 
+	When an attribute is not found there, and the instance’s class has an attribute by that name, the search continues with the class attributes. 
+	If a class attribute is found that is a user-defined function object or an unbound user-defined method object whose associated class is the class (call it C) of the instance for which the attribute reference was initiated or one of its bases, it is transformed into a bound user-defined method object whose im_class attribute is C and whose im_self attribute is the instance.
+	Static method and class method objects are also transformed, as if they had been retrieved from class C; see above under “Classes”.
+	See section 'Implementing Descriptors' for another way in which attributes of a class retrieved via its instances may differ from the objects actually stored in the class’s __dict__.
+	If no class attribute is found, and the object’s class has a __getattr__() method, that is called to satisfy the lookup.
+
+	Attribute assignments and deletions update the instance’s dictionary, never a class’s dictionary. If the class has a __setattr__() or __delattr__() method, this is called instead of updating the instance dictionary directly.
+
+	Class instances can pretend to be numbers, sequences, or mappings if they have methods with certain special names. See section Special method names.
+
+	Special attributes: 
+	__dict__ is the attribute dictionary; 
+	__class__ is the instance’s class.
+
+
+File object:
+	A file object represents an open file. File objects are created by the open() built-in function. The objects sys.stdin, sys.stdout and sys.stderr are initialized to file objects corresponding to the interpreter’s standard input, output and error streams.
+
+Internal types:
+	code objects, frame objects, traceback objects, slice objects, static method objects, class method objects
+
+**** 
+Attribute Access
+
+attribute - a way to get from one object to another
+
+What object does an attribute access return?
+Where does an object, set as an attribute, end up?
+
+__dict__ - contains only user-provided attributes; These are attributes provided by the user, and they usually (but not always) end up in the __dict__ of the object on which they're set.
+
+To access attrname of objectname (objectname.attrname), here is the search order:
+1. the object itself (objectname.__dict__ or any Python-provided attribute of objectname)
+2. the object's type (objectname.__class__.__dict__) (only user-provided class attributes)
+3. the bases of the object's class, and up the ancestor chain (__dict__ of each class in objectname.__class__.__bases__)
+
+dir(objectname) - returns **all** attributes of objectname
+inspect module - a module of functions to inspect objects
+
+****
+class defaultdict(dict):
+
+    def __init__(self, default=None):
+        dict.__init__(self)
+        self.default = default
+
+    def __getitem__(self, key):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            return self.default
+
+    def get(self, key, *args):
+        if not args:
+            args = (self.default,)
+        return dict.get(self, key, *args)
+
+    def merge(self, other):
+        for key in other:
+            if key not in self:
+                self[key] = other[key]
+
+dir() function:
+dir(some_instance): 
+	instance variables
+	methods
+	class attributes defined by instance's class and all its base classes
+
+*** 
+
+Now, what the default __getattribute__ does is that it checks if the attribute is a so-called descriptor or not, i.e. if it implements a special __get__ method. If it implements that method, then what is returned is the result of calling that __get__ method. Going back to the first version of out A class, this is what we have:
+
+In [28]: A.__dict__['m'].__get__(None, A)
+Out[28]: <unbound method A.m>
+
+"a method of a base class that calls another method defined in the same base class, may in fact end up calling a method of a derived class that overrides it."
+
+And because Python functions implement the descriptor protocol, if they are called on behalf an object, they bound themselves to that object in their __get__ method.
+
+Ok, so how to add a method to an existing object? Assuming you don't mind patching class, it's as simple as:
+
+B.m = m
+Then B.m "becomes" an unbound method, thanks to the descriptor magic.
+
+And if you want to add a method just to a single object, then you have to emulate the machinery yourself, by using types.MethodType:
+
+b.m = types.MethodType(m, b)

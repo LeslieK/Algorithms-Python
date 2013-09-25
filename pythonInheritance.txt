@@ -1,0 +1,172 @@
+super(type) - DO NOT USE THIS (returns an unbound super object)
+    You cannot use unbound super object to dispatch to the upper methods in the hierarchy.
+super(type, subtype) - returns a bound super object; bound to subtype
+super(type, object) - returns a bound super object; bound to object (aka instance)
+
+Python 2 version of super() only works with new-style classes.
+new-style class: a class that explicitly inherits from object or other builtin type or another new-style class; a user-defined type
+old-style class: unrelated to concept of type; type of any old-style class is always 'instance'
+The behaviour of new-style classes differs from that of old-style classes in a number of important details in addition to what type() returns.
+
+Return a proxy object that delegates method calls to a parent or sibling class of type. This is useful for accessing inherited methods that have been overridden in a class. (and you want to access the original version, before it was overridden?)
+
+super(cls, instance-or-subclass).method(*args, **kw) corresponds to:
+right-method-in-the-MRO-applied-to(instance-or-subclass, *args, **kw)
+
+The search order is same as that used by getattr() except that the type itself is skipped. ?
+
+The __mro__ attribute (Method Resolution search Order) of the type lists the method resolution search order used by both getattr() and super(). The attribute is dynamic and can change whenever the inheritance hierarchy is updated.
+
+
+Example:
+class Foo(object):
+    def __init__(self, a):
+    	self.a = a
+
+    def __getattribute__(self, attr):
+        return super(Foo, self).__getattribute__(attr)
+
+super(Foo, self).__getattribute__(attr) binds the __getattribute__ method of the 'nearest' superclass (formally, the next class in the class's Method Resolution Order, or MRO) to the current object self and then calls it and lets that do the work.
+
+There are two typical use cases for super. 
+
+In a class hierarchy with single inheritance, super can be used to refer to parent classes without naming them explicitly, thus making the code more maintainable. This use closely parallels the use of super in other programming languages.
+
+The second use case is to support cooperative multiple inheritance in a dynamic execution environment. This use case is unique to Python and is not found in statically compiled languages or languages that only support single inheritance. 
+
+This makes it possible to implement “diamond diagrams” where multiple base classes implement the same method. Good design dictates that this method has the same calling signature in every case (because the order of calls is determined at runtime, because that order adapts to changes in the class hierarchy, and because that order can include sibling classes that are unknown prior to runtime).
+
+
+class LoggingDict(dict):
+    # Simple example of extending a builtin class
+    def __setitem__(self, key, value):
+        logging.info('Setting %r to %r' % (key, value))
+        super(LoggingDict, self).__setitem__(key, value)
+
+
+super(): computed at runtime => gives programmer the freedom to influence computation of proxy object
+
+The calculation depends on: 
+1. the class where super is called and 
+2. on the instance’s tree of ancestors. 
+
+1 => The class where super is called is determined by the source code for that class. In our example, super() is called in the LoggingDict.__setitem__ method. 
+
+2 => this can change. We can create new subclasses with a rich tree of ancestors
+
+Let’s use this to our advantage to construct a logging ordered dictionary without modifying our existing classes:
+
+class LoggingOD(LoggingDict, collections.OrderedDict):
+    # Build new functionality by reordering the MRO (method resolution order)
+    pass
+
+OrderedDict: a dict that maintains the order in which items are inserted
+
+** ancestor tree: LoggingOD -> LoggingDict -> collections.OrderedDict -> dict -> object
+
+OrderedDict was inserted after LoggingDict and before dict!
+
+call to super() in LoggingDict dispatches to OrderedDict instead of dict
+
+The only purpose of LoggingOD is to compose 2 existing classes (change the ancestor tree), and control the search order used by super().
+
+We did not alter the source code for LoggingDict.
+
+To create subclasses with an MRO to our liking, we only need to know the two constraints: children precede their parents and the order of appearance in __bases__ is respected. The process of solving those constraints is known as linearization. (Solution uses topological sort on a graph + find longest path!)
+
+
+Practical advice
+1. the caller and callee need to have a matching argument signature: super().__func__(p1, p2, ...)
+A more flexible approach is to have every method in the ancestor tree cooperatively designed to accept keyword arguments and a keyword-arguments dictionary, to remove any arguments that it needs, and to forward the remaining arguments using **kwds, eventually leaving the dictionary empty for the final call in the chain.
+
+Each level strips-off the keyword arguments that it needs so that the final empty dict can be sent to a method that expects no arguments at all (for example, object.__init__ expects zero arguments):
+
+class Root(object):
+    def draw(self):
+        # the delegation chain stops here
+        assert not hasattr(super(), 'draw')
+
+class Shape(Root):
+    def __init__(self, shapename, **kwds):
+        self.shapename = shapename
+        super(Shape, self).__init__(**kwds)        
+
+class ColoredShape(Shape):
+    def __init__(self, color, **kwds):
+        self.color = color
+        super(ColoredShape, self).__init__(**kwds)
+
+cs = ColoredShape(color='red', shapename='circle')
+
+ColoredShape -> Shape -> object
+
+2. ensure that target method, super().method, exists
+if method is defined in object, then object is the end of the line for executing method
+For cases where object doesn’t have the method of interest (a draw() method for example), we need to write a root class that is guaranteed to be called before object. The responsibility of the root class is simply to eat the method call without making a forwarding call using super().
+
+3. every occurrence of the method needs to use super()
+This is easy to achieve if we’re designing the classes cooperatively – just add a super() call to every method in the chain.
+
+
+How to incorporate a non-cooperative class: Make an adapter class
+
+class Moveable(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def draw(self):
+        print('Drawing at position:', self.x, self.y)
+
+
+class MoveableAdapter(Root):
+	def __init__(self, x, y, **kwds):
+		self.moveable = Moveable(x, y) 	# moveable is an attribute of MoveableAdapter
+		super(MoveableAdapter, self).__init__(**kwds)
+	def draw(self):
+		self.moveable.draw()
+		super(MoveableAdapter, self).draw()
+
+class MoveableColoredShape(ColoredShape, MoveableAdapter):
+	pass
+
+mcs = MoveableColoredShape(color = 'red', shapename = 'circle', x = 0, y = 0)
+
+MoveableColoredShape -> ColoredShape -> Shape -> MoveableAdapter -> Root -> object  (YES)
+or
+MoveableColoredShape -> ColoredShape -> MoveableAdapter -> Shape -> Root -> object  (NO)
+
+Both Shape and MoveableAdapter inherit from Root. Who goes first in the MRO? (Shape)
+
+
+
+OrderedCounter -> Counter -> OrderedDict -> dict -> object
+
+__getattribute__
+__getattr__
+
+__getitem__()
+
+functions:
+getattr(object, name)
+hasattr(object, name)
+
+ex:
+getattr(x, 'foobar') is equivalent to x.foobar
+hasattr(x, 'foobar')
+
+
+class Foo:
+	def bar(self):
+		print 'baz!'
+	def __init__(self):
+        # Following lines do the same thing!
+		print hasattr(self, 'bar')
+		getattr(self, 'bar')()
+		self.bar()
+
+
+*****************************
+
+differrence between StreamHandler vs FileHandler ??
+FileHandler closes its stream when the handler is closed.
+StreamHandler does not close its stream (since it may be using sys.stdout or sys.stderr)

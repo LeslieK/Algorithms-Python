@@ -1,0 +1,369 @@
+9. Python Classes
+
+Python Scopes and Namespaces
+
+namespace: mapping from names to objects
+Note: The statements executed by the top-level invocation of the interpreter, either read from a script file or interactively, are considered part of a module called __main__, so they have their own global namespace. (The built-in names actually also live in a module; this is called __builtin__.)
+
+scope: a textual region of a Python program where a namespace is directly accessible (no qualifiers + dot).
+Although scopes are determined statically, they are used dynamically. At any time during execution, there are at least three nested scopes whose namespaces are directly accessible:
+
+	1. the innermost scope, which is searched first, contains the local names
+	2. the scopes of any enclosing functions, which are searched starting with the nearest enclosing scope, contains non-local, but also non-global names
+	3. the next-to-last scope contains the current module’s global names
+	4. the outermost scope (searched last) is the namespace containing built-in names
+
+If a name is declared global, then all references and assignments go directly to the middle scope containing the module’s global names. Otherwise, all variables found outside of the innermost scope are read-only (an attempt to write to such a variable will simply create a new local variable in the innermost scope, leaving the identically named outer variable unchanged).
+
+Usually, the local scope references the local names of the (textually) current function. Outside functions, the local scope references the same namespace as the global scope: the module’s namespace. **Class definitions** place yet another namespace in the local scope.
+
+class + scope
+When a class definition is entered, a new namespace is created, and used as the local scope — thus, all assignments to local variables go into this new namespace. In particular, function definitions bind the name of the new function here.
+
+When a class definition is left normally (via the end), a class object is created. 
+class object : a wrapper around the contents of the namespace created by the class definition
+class object is bound to the classname in the scope that is reinstated when the class object is exited (ex: if the class was defined in the module scope, then the class object is bound to the class name in the module namespace)
+
+CLASS OBJECTS
+Class objects support two kinds of operations: attribute references and instantiation.
+
+Attribute references: Attribute references use the standard syntax used for all attribute references in Python: obj.name. Valid attribute names are all the names that were in the class’s namespace when the class object was created.
+
+instantiation: classname() (call the _init_() function on the class object) Arguments given to the class instantiation operator are passed on to __init__().
+
+>> class Complex:
+...     def __init__(self, realpart, imagpart):
+...         self.r = realpart
+...         self.i = imagpart
+...
+>>> x = Complex(3.0, -4.5)  # () : we are invoking the class object to create a new object (instance object)
+>>> x.r, x.i                # and has attributes r and i
+(3.0, -4.5)
+
+INSTANCE OBJECTS
+
+class MyClass:
+    """A simple example class"""
+    i = 12345
+    def f(self):
+        return 'hello world'
+
+
+x = MyClass() : x is an instance object
+
+Only operation on instance objects is attribute reference. There are two kinds of valid attribute names, data attributes and methods.
+
+**data attributes** correspond to “instance variables” in Smalltalk, and to “data members” in C++. Data attributes need not be declared; like local variables, they spring into existence when they are first assigned to.
+
+A **method** is a function that “belongs to” an object. By definition, all attributes of a class that are function objects define corresponding methods of its instances. 
+
+
+x.f refers to a method object and is valid because MyClass.f refers to its corresponding function object
+x.f (method object) and MyClass.f (function object) are not the same thing.
+
+Method Objects
+x.f refers to a method object; it can be stored in a variable:
+xf = x.f
+xf can be called at a later time: xf()
+
+How do methods work? x.f() is equivalent to MyClass.f(x)
+The special thing about methods is that the object (x) is passed as the first argument of the function (no matter how many arguments there are in the function argument list)
+
+Implementation of methods:
+1. When an instance attribute is referenced that isn’t a data attribute, its class is searched.
+2. If the name denotes a valid class attribute that is a function object, a method object is created
+method object : a reference to the instance object (x) and a reference to the function object MyClass.f
+3. When the method object is called with an arg list, a new arg lsit is constructed from the instance object (x) and the arg list, and the function object (MyClass.f) is called with this extended arg list
+
+Name Clash
+Possible conventions include capitalizing method names, prefixing data attribute names with a small unique string (perhaps just an underscore), or using verbs for methods and nouns for data attributes.
+
+Public/Private
+Data attributes may be referenced by methods as well as by ordinary users (“clients”) of an object.
+In other words, classes are not usable to implement pure abstract data types. In fact, nothing in Python makes it possible to enforce data hiding — it is all based upon convention. (On the other hand, the Python implementation, written in C, can completely hide implementation details and control access to an object if necessary; this can be used by extensions to Python written in C.)
+
+Clients should use data attributes with care — clients may mess up invariants maintained by the methods by stamping on their data attributes. 
+
+Note that **clients may add data attributes of their own to an instance object**!! without affecting the validity of the methods, as long as name conflicts are avoided — again, a naming convention can save a lot of headaches here.
+
+Creating a function object in a class:
+Any function object that is a class attribute defines a method for instances of that class. It is not necessary that the function definition is textually enclosed in the class definition: assigning a function object to a local variable in the class is also ok. For example: f, g, h are all reference function objects
+
+# Function defined outside the class
+def f1(self, x, y):
+    return min(x, x+y)
+
+class C:
+    f = f1
+    def g(self):
+        return 'hello world'
+    h = g
+
+Methods can reference names in their global scope (global scope = the module containing the class definition)
+1. functions and modules imported into the global scope can be used by methods
+2. functions and classes defined in the global scope can be used by methods
+
+Usually, the class containing the method is itself defined in this global scope, and there are some good reasons why a method would want to reference its own class.
+
+A Value is an object and has a class (also called its type). It is stored as object.__class__
+
+INHERITANCE
+The syntax for a derived class definition is:
+
+class DerivedClassName(BaseClassName):
+    <statement-1>
+    .
+    .
+    .
+    <statement-N>
+
+The name BaseClassName must be defined in a scope containing the derived class definition.  If it is defined in another module, then:
+
+class DerivedClassName(modname.BaseClassName): ...
+
+--Execution of a derived class definition
+Same as for a base class. When the class object is constructed, the base class is remembered. This is used for resolving attribute references: if a requested attribute is not found in the class, the search proceeds to look in the base class. This rule is applied recursively if the base class itself is derived from some other class.
+
+Derived classes may override methods of their base classes.
+
+Because methods have no special privileges when calling other methods of the same object, a method of a base class that calls another method defined in the same base class may end up calling a method of a derived class that overrides it. 
+
+An overriding method in a derived class may in fact want to extend rather than simply replace the base class method of the same name. There is a simple way to call the base class method directly: just call BaseClassName.methodname(self, arguments). This is occasionally useful to clients as well. (Note that this only works if the base class is accessible as BaseClassName in the global scope.) 
+
+--Instantiation of a derived class
+DerivedClassName() creates a new instance of the class. Method references are resolved as follows: the corresponding class attribute is searched, descending down the chain of base classes if necessary, and the method reference is valid if this yields a function object.
+
+-- built_ins that work with inheritance:
+isinstance(obj, int) will be True if obj.__class__ is int or some class derived from int
+issubclass(bool, int) is True since bool is a subclass of int
+issubclass(unicode, str) is False since unicode is not a subclass of str (they share a common ancestor, basestring)
+
+MULTIPLE INHERITANCE
+A class definition with multiple base classes looks like this:
+
+class DerivedClassName(Base1, Base2, Base3):
+    <statement-1>
+    .
+    .
+    .
+    <statement-N>
+
+For old-style classes, the only rule is depth-first, left-to-right. Thus, if an attribute is not found in DerivedClassName, it is searched in Base1, then (recursively) in the base classes of Base1, and only if it is not found there, it is searched in Base2, and so on.
+
+With new-style classes, dynamic ordering is necessary because all cases of multiple inheritance exhibit one or more diamond relationships (where at least one of the parent classes can be accessed through multiple paths from the bottommost class). For example, all new-style classes inherit from object, so any case of multiple inheritance provides more than one path to reach object. 
+
+To keep the base classes from being accessed more than once, the dynamic algorithm linearizes the search order in a way that preserves the left-to-right ordering specified in each class, that calls each parent only once.
+mro = python method resolution order
+
+The API
+
+“Private” instance variables that cannot be accessed except from inside an object don’t exist in Python. However, there is a convention that is followed by most Python code: a name prefixed with an underscore (e.g. _spam) should be treated as a non-public part of the API (whether it is a function, a method or a data member). It should be considered an implementation detail and subject to change without notice.
+
+Name Mangling
+Any identifier of the form __spam (at least two leading underscores, at most one trailing underscore) is textually replaced with _classname__spam, where classname is the current class name with leading underscore(s) stripped.
+
+Attributes of instance method objects, x.m
+m.im_self : the instance object (x) with the method m
+m.im_func : the function object (Classname.f) corresponding to the method m
+
+
+STACK OVERFLOW POST: WHAT IS A METACLASS?
+CLASSES AS OBJECTS
+This object (the class) is itself capable of creating objects (the instances), and this is why it's a class.
+
+But still, it's an object, and therefore:
+
+you can assign it to a variable
+you can copy it
+you can add attributes to it
+you can pass it as a function parameter
+
+CREATING CLASSES DYNAMICALLY
+You can write a function that returns a class (but you still have to define the class in the function)
+Since a class is an object, it must be generated by something.
+python creates an object by executing the class definition. BUT there is a command that can make objects too.
+type : type(name, bases, dict) -> a new type
+name : name of the class
+bases: tuple of the base classes (can be empty)
+dict : dictionary containing { attribute name : value }
+
+MyShinyClass = type('MyShinyClass', (), {})  # returns a class object
+is equivalent to:
+class MyShinyClass(object):
+    pass
+
+Foo = type('Foo', (), { bar : True })
+
+Eventually you'll want to add methods to your class. Just define a function (in the module namespace) with the proper signature and assign it as an attribute to the class object.
+
+def echo_bar(self):
+    print self.bar
+
+FooChild = type('FooChild', (Foo,), {'echo_bar': echo_bar})
+
+my_foo = FooChild()
+my_foo.echo_bar() returns True
+FooChild.echo_bar(my_foo) return True
+method object = (my_foo, echo_bar, FooChild)
+
+In Python, classes are objects, and you can create a class on the fly, dynamically.
+This is what Python does when you use the keyword class, and it does so by using a metaclass.
+
+WHAT ARE METACLASSES?
+metaclasses are the 'stuff' that creates classes.
+MyClass = MetaClass()
+MyObject = MyClass()
+
+The 'type' command does makes classes:
+MyClass = type('MyClass', (), {})
+'type' is the metaclass Python uses to create all classes behind the scenes.
+
+Everything, and I mean everything, is an object in Python. That includes ints, strings, functions and classes. All of them are objects. And all of them have been created from a class:
+
+age = 35
+age.__class__ returns int
+
+name = 'bob'
+name.__class__ returns str
+
+def foo(): pass
+foo.__class__ returns function
+
+class Bar(object): pass
+Bar.__class__ returns type (Bar is created from type, a metaclass)
+b = Bar()
+b.__class__ returns __main__.Bar
+
+What is the __class__ of any class?
+age.__class__.__class__ returns type
+name.__class__.__class__ returns type
+foo.__class__.__class__ returns type
+Bar.__class__ returns type
+
+type is the built-in metaclass that Python uses. You can create your own metaclass.
+
+To create your own metaclass, you add a __metaclass__ attribute when you create a class:
+class Foo(object):
+    __metaclass__ = do something
+    [...]
+
+You write class Foo(object) first, but the class object Foo is not created in memory yet.
+
+example:
+class Foo(Bar):
+    pass
+
+Python will look for __metaclass__ in the class definition. If it finds it, it will use it to create the object class Foo. If it doesn't, it will use type to create the class.
+
+Python does the following:
+
+1. Is there a __metaclass__ attribute in Foo?
+
+If yes, create in memory a class object (I said a class object, stay with me here), with the name Foo by using what is in __metaclass__.
+
+If Python can't find __metaclass__, it will look for a __metaclass__ in Bar (the parent class), and try to do the same.
+
+If Python can't find __metaclass__ in any parent, it will look for a __metaclass__ at the MODULE level, and try to do the same.
+
+Then if it can't find any __metaclass__ at all, it will use type to create the class object.
+
+WHAT IS IN __METACLASS__ ??
+Now the big question is, what can you put in __metaclass__ ?
+
+The answer is: something that can create a class.
+
+And what can create a class? type, or anything that subclasses or uses it.
+
+CUSTOM METACLASSES
+The main purpose of a metaclass is to change the class automatically, when it is created.
+You usually do this for APIs, where you want to create classes matching the current context.
+
+ex:
+You decide that all classes in your module should have their attributes written in uppercase. There are several ways to do this, but one way is to set __metaclass__ at the module level.
+This way, all classes of this module will be created using this metaclass, and we just have to tell the metaclass to turn all attributes to uppercase.
+
+Now, the __metaclass__ can actually be any callable; it doesn't need to be a formal class. So we will start by using a function to define __metaclass__.
+
+The __metaclass__ automatically gets passed the same argument that you pass to type
+
+def upper_attr(future_class_name, future_class_parents, future_class_attr):
+    """
+    Return a class object, with the list of its attributes tuned into uppercase.
+    """
+    # pick any attr that doesn't start with '__'
+    attrs = ( (name, value) for name, value in future_class_attr.items() if not name.startswith('__'))
+    # turn into uppercase
+    uppercase_attr = dict((name.upper(), value) for name, value in attrs)
+
+    # let type do the class creation
+    return type(future_class_name, future_class_parents, uppercase_attr)
+
+__metaclass__ = upper_attr  # __metaclass__ is a function object
+
+
+Let's do this again using a class instead of a function.
+
+#remember that type is actually a class like str and int so you can inherit from it
+class UpperAttrMetaclass(type):
+    def __new__(upperattr_metaclass, future_class_name, future_class_parents, future_class_attr):
+
+        attrs = ( (name, value) for name, value in future_class_attr.items() if not name.startswith('__'))
+        uppercase_attr = dict((name.upper(), value) for name, value in attrs)
+
+        return type(future_class_name, future_class_parents, uppercase_attr)  # 
+
+#let's make this OOP
+class UpperAttrMetaclass(type):
+    def __new__(upperattr_metaclass, future_class_name, future_class_parents, future_class_attr):
+
+        attrs = ( (name, value) for name, value in future_class_attr.items() if not name.startswith('__'))
+        uppercase_attr = dict((name.upper(), value) for name, value in attrs)
+
+        return type.__new__(upperattr_metaclass, future_class_name, future_class_parents, uppercase_attr)
+
+__metaclass__ = UpperAttrMetaclass
+print __metaclass__ returns <class '__main__.UpperAttrMetaclass'>
+
+Now let's simplify the names:
+
+class UpperAttrMetaclass(type):
+    def __new__(cls, name, bases, dict):
+        attrs = ( (name, value) for name, value in future_class_attr.items() if not name.startswith('__'))
+        uppercase_attr = dict((name.upper(), value) for name, value in attrs)
+
+        return type.__new__(cls, name, bases, uppercase_attr)
+
+
+We can make it even cleaner using super, which will ease inheritance (because you can have metaclasses, inheriting from metaclasses, inheriting from type):
+
+class UpperAttrMetaclass(type):
+    def __new__(cls, name, bases, dict):
+        attrs = ( (name, value) for name, value in future_class_attr.items() if not name.startswith('__'))
+        uppercase_attr = dict((name.upper(), value) for name, value in attrs)
+
+        return super(UpperAttrMetaclass, cls).__new__(cls, name, bases, uppercase_attr)
+
+A Note on super():
+There are two typical use cases for super.
+
+In a class hierarchy with single inheritance, super can be used to refer to parent classes without naming them explicitly, thus making the code more maintainable. This use closely parallels the use of super in other programming languages.
+
+The second use case is to support cooperative multiple inheritance in a dynamic execution environment. Good design dictates that this method have the same calling signature in every case (because the order of calls is determined at runtime, because that order adapts to changes in the class hierarchy, and because that order can include sibling classes that are unknown prior to runtime).
+
+THE LAST WORD
+Classes are objects that can create instances.
+Since classes are objects, they are themselves instances -- of metaclasses.
+
+EVERYTHNG IS AN OBJECT IN PYTHON. Each object is either an instance of a class or an instance of a metaclass.
+
+
+
+
+
+
+
+Indeed, metaclasses are especially useful to do black magic, and therefore complicated stuff. But by themselves, they are simple:
+
+intercept a class creation
+modify the class
+return the modified class

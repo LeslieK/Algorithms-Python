@@ -1,0 +1,239 @@
+Introduction:
+The default behavior for attribute access is to get, set, or delete the attribute from an object’s dictionary. For instance, a.x has a lookup chain starting with a.__dict__['x'], then type(a).__dict__['x'], and continuing through the base classes of type(a) excluding metaclasses. If the looked-up value is an object defining one of the descriptor methods, then Python may override the default behavior and invoke the descriptor method instead.
+
+lookup attribute -> is object a descriptor? -> if yes, override default behavior (or not)
+
+For example, suppose class C defines a function f. 
+class C(object):
+	def f(self):
+		return 'function f'
+
+c = C()
+>>> C.__dict__['f']
+>>> <function __main__.f>
+>>> c.f
+>>> bound method C.f of <__main__.C object at 0x...>
+>>> C.f
+>>> <unbound method C.f>
+
+How did the function f become a method bound to instance c?
+Ans: While looking for attribute f of instance c, Python finds an object f with a __get__() method inside the class's __dict__. Instead of returning the object (default behavior), it calls the __get__() method and returns the result. 
+ex: f.__get__(c, C) => method f bound to c
+
+It is only the presence of the __get__() method that transforms an ordinary function into a bound method. 
+Anyone can put objects with a __get__() method inside the *class* __dict__ and get away with it. Such objects are called descriptors and have many uses.
+
+An object that has a __get__() method (and optionally __set__() and __delete__() methods) and complies with the descriptor protocol is a descriptor and can be placed inside a *class's* __dict__ to do something special when an attribute is accessed.  
+
+To repeat: Descriptors work only when attached to classes. Sticking a descriptor in an object that is not a class gives us nothing.
+
+Descriptor Protocol:
+descr.__get__(self, obj, type=None) --> value
+descr.__set__(self, obj, value) --> None
+descr.__delete__(self, obj) --> None
+
+"invoking a descriptor": invoking one of the methods __get__(), __set__(), __delete__() on the descriptor
+
+class Desc(object):
+	"A descriptor example that just demonstrates the protocol"
+
+	def __get__(self, obj, cls=None): 	# obj is object on which attribute is accessed; self references object returned from __dict__ 
+		pass
+	def __set__(self, obj, val):		# obj is object on which attribute is set
+		pass
+	def __delete__(self, obj):			# obj is object on which attribute is deleted
+		pass
+
+Definition:
+descriptor: an attribute (which happens to be an object) that has any of the following methods: __get__(), __set__(), __delete__()
+descriptor class: a new-style class that implements __get__(self, obj, objtyp=None) method
+descriptor object: an instance of a descriptor class; intended to be used as a class attribute (aka attribute descriptor)
+data descriptor: a descriptor that defines __get__ and __set__
+non-data descriptor: a descriptor that defines __get__ (typically used for method objects)
+
+Using a descriptor:
+
+class C(object):
+	"a class with a single descriptor"
+	d = Desc() 							# attach descriptor d to class C (make it a class attribute)
+
+C.d                                     # C.__dict__['d'].__get__(None, C)
+c = C()
+c.d 									# c inherits the descriptor from its class, C
+                                        # c.d => C.__dict__['d'].__get__(c, type(c))
+
+
+**Data** descriptors provide full control (read/write/del) over an attribute. When you have a data descriptor, it controls all access (both read and write) to the attribute on an instance. On __set__(), python writes the attribute object, transforms/stores it. On __get__(), python reverse-transforms/retrieves it. python knows what to do.
+(Of course, you could still directly go to the class and replace/delete the descriptor, but you can't do that from an instance of the class.)
+
+Non-data descriptors only provide __get__(). They provide an attribute value to an instance when the instance itself does not have a value. So setting the attribute on an instance hides the descriptor. This is particularly useful in the case of functions (which are non-data descriptors). One can hide a function defined in the class by attaching one to an instance.
+
+
+Hiding a method:
+
+class C(object):
+	def f(self):
+		return 'f defined in class'
+
+cobj = C()
+cobj.f() 			# C.__dict__['f'].__get__(cobj, C)() =>  C.__dict__['f'](cobj)
+
+def another_f():
+	return 'another f'
+
+cobj.f = another_f
+
+cobj.f() 			# calls another_f; the function f defined in C is hidden
+
+****
+
+Attribute Search Summary
+
+from python doc: 
+Data and non-data descriptors differ in how overrides are calculated with respect to entries in an instance’s dictionary. HUH???
+
+explanation:
+When retrieving an attribute from an non-type object, objectname.attrname, python follows these steps:
+1. if attrname is a special attribute for objectname (python-provided attribute), return it.
+2. Check objectname.__class__.__dict__['attrname']
+	if exists and is-data-descriptor: return descriptor result
+	else: repeat for each class in objectname.__class__.__bases__
+3. Check objectname.__dict__['attrname']
+	if exists: return result
+4. Check objectname.__class__.__dict__['attrname']
+	if exists and is-non-data-descriptor: return descriptor result
+	elif exists and is-not-descriptor: return value
+	else: repeat for each class in objectname.__class__.__bases__
+5. raise AttributeError
+
+When setting a user-defined attribute, objectname.attrname = avalue, python follows these steps:
+1. Check objectname.__class__.__dict__['attrname']
+   if exists and is-data-descriptor: python uses descriptor to set value
+   else:  repeat for each class in objectname.__class__.__bases__
+2. Insert avalue into objectname.__dict__['attrname']
+
+When deleting a user-defined attribute, objectname.attrname = avalue, python follows these steps:
+1. Check objectname.__class__.__dict__['attrname']
+   if exists and has __delete__(self, obj) method: python uses descriptor to set value
+   else:  repeat for each class in objectname.__class__.__bases__
+2. Delete 'attrname' from objectname.__dict__
+
+What happens when setting a Python-provided attribute depends on the attribute. 
+
+**** 
+Descriptors are a powerful, general purpose protocol. 
+They are the mechanism behind properties, methods, static methods, class methods, and super().
+
+
+**** 
+property - property(fget=None, fset=None, fdel=None, doc=None) -> property attribute
+Calling property() is a succinct way of building a data descriptor that triggers function calls upon access to an attribute.
+The property() builtin helps whenever a user interface has granted attribute access and then subsequent changes require the intervention of a method. 
+
+**************** 
+
+staticmethod() :
+
+class E(object):
+	def f(x):
+		print x
+	f = staticmethod(f)
+
+>>>E.f(3) => 3
+>>>E().f(3) => 3
+
+class StaticMethod(object):
+	"a non-data descriptor class"
+	def __init__(self, f):
+		self._f = f
+	def __get__(self, obj, objtype=None):
+		return self._f
+
+f = StaticMethod(f)
+E.f => E.__dict__['f'] => staticmethod obj => obj.__get__(None, E) => f
+E().f => same as above
+
+**************** 
+
+classmethod() :
+
+class E(object):
+	def f(klass, x):
+		return klass.__name__, x
+	f = classmethod(f)
+
+>>> E.f(3)
+>>> E().f(3)
+
+class ClassMethod(object):
+	"a non-data descriptor class"
+	def __init__(self, f):
+		self._f = f
+	def __get__(self, obj, objtype=None):
+		if objtype is None:
+			objtype = type(obj)
+		def newfunc(*args):
+			return self._f(objtype, *args)
+		return newfunc
+
+	f = ClassMethod(f)
+
+E.f => E.__dict__['f'] => classmethod obj => obj.__get__(None, E) => newfunc(E, *args)
+E().f => same as above
+
+****
+
+More on the __get__ method:
+
+__get__ method:
+The magic of binding an object to an instance is done through the __get__ method of the object found in the class (function object, staticmethod object, classmethod object, data attribute object, class attribute object)
+	the __get__ method for regular function objects returns a bound method object
+	the __get__ method for staticmethod objects returns the underlying function
+	the __get__ method for classmethod objects returns the underlying function with an additional first arg: the class on which the object is accessed
+	If a class attribute has no __get__ method, it is never bound to an instance; there's a default __get__ operation that returns the object unchanged
+
+__get__(self, instance, owner) : called to get the attribute of the owner class (class attribute access) or to get the attribute of the instance of that class (instance attribute access). owner = owner class  instance = the instance that the attribute was accessed through, instance = None when attribute is accessed through the owner. Returns the computed attribute value or raise an AttributeError exception.
+
+binding a function to a single instance using __get__: (This binds foo to just this one instance, a of A)
+>>> foo
+<function foo at 0x978548c>
+>>> a.foo = foo.__get__(a, A) # or foo.__get__(a, type(a))
+>>> a.foo()
+im foo, invoked with:  <__main__.A instance at 0x973ec6c>
+>>> a.foo
+<bound method A.foo of <__main__.A instance at 0x973ec6c>>
+
+alternative way to bind a function to a single instance: 
+	>>> import types
+	>>> a.foo = types.MethodType(foo, type(a))
+
+alternative way to bind a function to a single instance:
+	>>> a.foo = instancemethod(foo, a, type(a))
+
+another alternative:  add an attribute to a class; foo binds to all instances (existing and future)
+	>>> A.foo = foo
+
+__set__()
+
+b.x
+if b is an object: (the machinery is in object.__getattribute__())
+type(b).__dict__['x'].__get__(b, type(b))
+
+B.x
+if B is a class object: (the machinery is in type.__getattribute__())
+B.__dict__['x'].__get__(None, B)
+
+def __getattribute__(self, key):
+    "Emulate type_getattro() in Objects/typeobject.c"
+    v = object.__getattribute__(self, key)
+    if hasattr(v, '__get__'):
+       return v.__get__(None, self)
+    return v
+
+super(B, obj).m()
+search obj.__class__.__mro__ for base class A immediately following B and then return:
+A.__dict__['m'].__get__(obj, A)
+
+The mechanism for descriptors is embedded in the __getattribute__() methods for object, type, and super(). Classes inherit this machinery when they derive from object or if they have a meta-class providing similar functionality. Likewise, classes can turn-off descriptor invocation by overriding __getattribute__().
+
+

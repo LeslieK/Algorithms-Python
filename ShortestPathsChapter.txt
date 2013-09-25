@@ -1,0 +1,28 @@
+Q. Why define separate data types for undirected graphs, directed graphs, edge-weighted undirected graphs, and edge-weighted directed graphs?
+
+Each data type has different properties. The properties determine the algorithms used to process the graph.
+
+Each graph has a different representation:
+undirected graph representation: a bidirectional edge is implied by an adjacent vertex
+directed graph representation: a directed edge is implied by the target vertex
+edge-weighted undirected representation: directed, unweighted edge is represented explicitly (e.either(), e.other(v), e.weight())
+edge-weighted directed representation: directed, weighted edge is represented explicitly (e.src(), e.sink(), e.weight())
+
+DO THIS: It is a textbook exercise in software engineering to define an ADT from which ADTs can be derived for:
+Graph  - undirected graph
+Digraph - directed graph
+EdgeWeightedGraph - edge-weighted undirected graph
+EdgeWeightedDigraph - edge-weighted directed graph
+
+Q. How can we find shortest paths in undirected (edge-weighted) graphs?
+
+An undirected graph is equivalent to a digraph where each edge is bidirectional.
+
+no cycles: topological sort
+no negative edges: Dijkstra's Algorithm
+negative edges: Bellman-Ford
+negative cycles: shortest path is undefined
+
+4.4.1 Adding a constant to every edge weight does not change the solution to the single-source shortest-paths problem.
+False
+4.4.2

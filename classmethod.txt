@@ -1,0 +1,20 @@
+@classmethod in python
+
+A class method receives the class as implicit first argument, just like an instance method receives the instance. To declare a class method, use this idiom:
+
+class C(object):
+    @classmethod
+    def f(cls, arg1, arg2, ...):
+        ...
+
+
+From stack overflow:
+The most straightforward way to think about it is to think in terms of what type of object the method needs in order to do its work. 
+
+If your method needs access to an instance, make it a regular method. 
+
+If it needs access to the class, make it a classmethod. 
+
+If it doesn't need access to the class or the instance, but is thematically related to the class (typical example: make_from methods) then use staticmethod.
+
+Otherwise, make it a module function. 
