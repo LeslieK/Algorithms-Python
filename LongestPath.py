@@ -22,7 +22,7 @@ class AcyclicLP(object):
 				self._relax(e)
 
 	def _relax(self, e):
-		"relax edge e"
+		"relax edge e such that distTo[w] is maximized"
 		v = e.src()
 		w = e.sink()
 		if self._distTo[w] < self._distTo[v] + e.weight():

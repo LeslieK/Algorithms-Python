@@ -1,5 +1,5 @@
 class MinPQ(object):
-	"min priority queue for weighted edges"
+	"min priority queue; min value removed first"
 	def __init__(self):
 		"Builds a MinPQ data structure"
 		self._pq = [0]					# store items at indices 1 to N
@@ -63,7 +63,7 @@ class MinPQ(object):
 
 
 class MaxPQ(object):
-	"min priority queue"
+	"max priority queue; max value removed first"
 	def __init__(self):
 		"Builds a MinPQ data structure"
 		self._pq = [0]					# store items at indices 1 to N
@@ -126,11 +126,11 @@ class MaxPQ(object):
 		return "size=%r weights=%r" % (self.size(), [e.weight() for e in self._pq[1:]])
 
 class IndexMinPQ(object):
-	"associate an index between 0 and N-1 with each key in a priority queue"
+	"min priority queue where each key is referenced by an index i"
 	def __init__(self, N):
 		"create indexed PQ with indices 0 thru N-1"
-		self._NMAX = N
-		self._keys = [-1 for _ in range(N+1)] 	# key = weight of an edge
+		self._NMAX = N                          # max number of keys
+		self._keys = [-1 for _ in range(N+1)] 	# key = priority (ex: weight of an edge)
 		self._pq = [-1 for _ in range(N+1)]		# input: heap position 		output: index
 		self._qp = [-1 for _ in range(N+1)]		# input: index 				output: heap position 
 		self._N = 0								# size of _pq
@@ -185,7 +185,7 @@ class IndexMinPQ(object):
 	def contains(self, i):
 		"test whether pq contains index i"
 		assert (i >= 0 and i < self._NMAX) == True, "i out of range"
-		return self._qp[i + 1] != -1 			# -1 means heap position has not been assigned
+		return self._qp[i + 1] != -1 		# -1 means heap position has not been assigned
 
 	def keyOf(self, i):
 		"returns key associated with index i"
