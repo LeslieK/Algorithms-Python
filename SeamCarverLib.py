@@ -48,7 +48,27 @@ class SeamCarver(object):
 
 	def findHorizontalSeam(self):
 		"return horizontal seam in image"
-		pass
+		# tranpose dimensions
+		self._exchDims()
+
+		# horizontal seam = sequence of rows; seam[0] is row of col 0
+		# col-indexed seam
+		seam = [-1 for _ in range(self._height)]
+		self._buildGraph(transposed=True)
+		row = self._height - 1
+		v = self._edgeTo[self._sink]
+		while (v != self._source):
+			seam[row] = v % self._width  # seam[row] = col
+			v = self._edgeTo[v]
+			row -= 1
+		self._exchDims()
+		return seam
+
+	def _exchDims(self):
+		"exchange self._width and self._height"
+		swap = self._width
+		self._width = self._height
+		self._height = swap
 
 	def _toLinear(self, col, row):
 		"converts pixel from (col, row) to single index"
@@ -64,7 +84,7 @@ class SeamCarver(object):
 
 	def _isValid(self, col, row=None):
 		if row is None:
-			if (col < 0) or (col > self._width * self._height):
+			if (col < 0) or (col > self._width * self._height - 1):
 				return False
 			else:
 				return True
@@ -74,7 +94,7 @@ class SeamCarver(object):
 			else:
 				return True
 
-	def _buildGraph(self):
+	def _buildGraph(self, transposed=False):
 		"pixels are nodes; edges define precedence constraints in a seam"
 		
 		# for row 0 pixels: distTo[] is 0; edgeTo[] is _source vertex 
@@ -89,45 +109,58 @@ class SeamCarver(object):
 		for v in range(self._width, self._num_pixels):
 			if (v % self._width == 0):
 				# pixel is on left edge
-				self._edgeTodistTo(v, edgeL=True)
+				self._edgeTodistTo(v, transposed=transposed, edgeL=True)
 			elif (v % self._width == self._width - 1):
 				# pixel is on right edge
-				self._edgeTodistTo(v, edgeR=True)
+				self._edgeTodistTo(v, transposed=transposed, edgeR=True)
 			else:
-				self._edgeTodistTo(v)
+				self._edgeTodistTo(v, transposed=transposed)
 		# for sink vertex
 		index, min_energy = min(enumerate(self._distTo[self._num_pixels - self._width:self._num_pixels]), key=lambda (x, y): y)
 		self._distTo[self._sink] = min_energy
-		self._edgeTo[self._sink] = (self._height-1) * self._width + index
+		self._edgeTo[self._sink] = (self._height - 1) * self._width + index
 
 
-	def _edgeTodistTo(self, v, edgeL=False, edgeR=False):
+	def _edgeTodistTo(self, v, edgeL=False, edgeR=False, transposed=False):
 		# returns pixel connected to v with min energy
+
 		if edgeL:
 			# left edge
 			vC = v - self._width
-			vR = v - self._width + 1
-			vL = vC
+			vRD = v - self._width + 1
+			vLU = vC
 		elif edgeR:
 			# right edge
-			vL = v - self._width - 1
+			vLU = v - self._width - 1
 			vC = v - self._width
-			vR = vC
+			vRD = vC
 		else:
 			# pixels connect to v
-			vL = v - self._width - 1
+			vLU = v - self._width - 1
 			vC = v - self._width
-			vR = v - self._width + 1
+			vRD = v - self._width + 1
 		# energy of pixels connected to v
-		eL = self._energy[vL]
-		eC = self._energy[vC]
-		eR = self._energy[vR]
-		if eL <= min(eC, eR):
-			self._edgeTo[v] = vL
-			self._distTo[v] = self._distTo[vL] + eL
-		elif eR <= min(eL, eC):
-			self._edgeTo[v] = vR
-			self._distTo[v] = self._distTo[vR] + eR
+		if transposed:
+			(colU, rowU) = self._toGrid(vLU)
+			(colC, rowC) = self._toGrid(vC)
+			(colD, rowD) = self._toGrid(vRD)
+			# read energy
+			eLU = self._energy[self._height * colU + rowU]
+			eC = self._energy[self._height * colC + rowC]
+			eRD = self._energy[self._height * colD + rowD]
+			
+		else:
+			# read energy directly from energy array
+			eLU = self._energy[vLU]
+			eC = self._energy[vC]
+			eRD = self._energy[vRD]
+
+		if eLU <= min(eC, eRD):
+			self._edgeTo[v] = vLU
+			self._distTo[v] = self._distTo[vLU] + eLU
+		elif eRD <= min(eLU, eC):
+			self._edgeTo[v] = vRD
+			self._distTo[v] = self._distTo[vRD] + eRD
 		else:
 			self._edgeTo[v] = vC
 			self._distTo[v] = self._distTo[vC] + eC
