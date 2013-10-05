@@ -1,12 +1,14 @@
 import png, array
 
+
 class Picture(object):
 	"reads a png image from a filename"
-	#_BORDER_ENERGY = 195075
-
+	BORDER_ENERGY = 195075
+	#BORDER_ENERGY = 195705
+	
+	
 	def __init__(self, pngfilename):
 		"reads in a .png image"
-		_BORDER_ENERGY = 195075
 		_CH = 3		# number of channels (R,G,B = 3; R,G,B,A = 4)
 		_r = png.Reader(filename=pngfilename)
 		res = _r.read()
@@ -27,7 +29,7 @@ class Picture(object):
 		
 		# row 0 of image
 		_row_prev = res[2].next()
-		self.energyArray.extend([_BORDER_ENERGY] * self.num_cols)
+		self.energyArray.extend([Picture.BORDER_ENERGY] * self.num_cols)
 		self.imageArray.extend(_row_prev)
 
 		if (self.num_rows == 1):
@@ -37,7 +39,7 @@ class Picture(object):
 		_row_curr = res[2].next()
 		self.imageArray.extend(_row_curr)
 		if (self.num_rows == 2):
-			self.energyArray.extend([_BORDER_ENERGY] * self.num_cols)
+			self.energyArray.extend([Picture.BORDER_ENERGY] * self.num_cols)
 			return
 		
 		# for images with more than 2 rows
@@ -64,18 +66,18 @@ class Picture(object):
 			_energy = map(sum, zip(_gradR, _gradG, _gradB))
 
 			# left border pixel energy 
-			self.energyArray.append(_BORDER_ENERGY)
+			self.energyArray.append(Picture.BORDER_ENERGY)
 			# non-border pixel energy
 			self.energyArray.extend(_energy)
 			# right border pixel energy
-			self.energyArray.append(_BORDER_ENERGY)
+			self.energyArray.append(Picture.BORDER_ENERGY)
 
 			_row_prev = _row_curr
 			_row_curr = _row_next
 
 		# bottom row of energy array
 		print 'i am in Picture'
-		self.energyArray.extend([_BORDER_ENERGY] * self.num_cols)
+		self.energyArray.extend([Picture.BORDER_ENERGY] * self.num_cols)
 
 
 	def _diff_squared(self, x, y):

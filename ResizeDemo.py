@@ -1,7 +1,9 @@
 import argparse, png, array
 from readPNG_2 import Picture
-from SeamCarverLib import SeamCarver
+#from SeamCarverLib import SeamCarver
+import SeamCarverLib
 import SeamCarverUtilities
+import pdb
 
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="filename of image", type=str)
@@ -13,14 +15,27 @@ print "build energy array for {}".format(args.filename)
 pic = Picture(args.filename)
 
 print "build graph of pixels from energy array"
-sc = SeamCarver(pic)
+sc = SeamCarverLib.SeamCarver(pic)
 
-#print pic.energyArray, '\nlen = ', len(pic.energyArray)
+print "print vertical seam 1\n"
+SeamCarverUtilities.printVerticalSeam(sc) 			# find 1st: good
 
-print "print vertical seam\n"
+print "print vertical seam 2"
+s = sc.findVerticalSeam()
+sc.removeVerticalSeam(s)  							# remove vert #1		
+SeamCarverUtilities.printVerticalSeam(sc) 			# good
+
+print "print vertical seam 3"
+print sc.height(), sc.width()
+s = sc.findVerticalSeam()							# find 2nd: good
+sc.removeVerticalSeam(s) 							# remove vert #2					
+#pdb.set_trace()
+SeamCarverUtilities.printVerticalSeam(sc) 			# energy array: good; seam: bad
+
+print "remove vertical seam 4"
+s = sc.findVerticalSeam()
+sc.removeVerticalSeam(s)
 SeamCarverUtilities.printVerticalSeam(sc)
-print "print horizontal seam\n"
-SeamCarverUtilities.printHorizontalSeam(sc)
 
 
 #print "remove {} rows".format(args.rowsToRemove)
