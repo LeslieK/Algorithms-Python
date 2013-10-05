@@ -14,28 +14,84 @@ args = parser.parse_args()
 print "build energy array for {}".format(args.filename)
 pic = Picture(args.filename)
 
-print "build graph of pixels from energy array"
+print "create seam carver"
 sc = SeamCarverLib.SeamCarver(pic)
 
-print "print vertical seam 1\n"
-SeamCarverUtilities.printVerticalSeam(sc) 			# find 1st: good
+print "print vertical seam 1"
+print sc.width(), sc.height()
+SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+#s = sc.findVerticalSeam()
+# for i in range(sc.height()):
+# 	print s[i]
+			
+s = sc.findVerticalSeam()				
+sc.removeVerticalSeam(s)
 
-print "print vertical seam 2"
-s = sc.findVerticalSeam()
-sc.removeVerticalSeam(s)  							# remove vert #1		
-SeamCarverUtilities.printVerticalSeam(sc) 			# good
+# print "print vertical seam 2"
+print sc.width(), sc.height()
+SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# s = sc.findVerticalSeam()
+# for i in range(sc.height()):
+# 	print s[i]
+# # print sc._edgeTo
+# # print sc._distTo
+# SeamCarverUtilities.printVerticalSeam(sc) 			
+# print
 
-print "print vertical seam 3"
-print sc.height(), sc.width()
-s = sc.findVerticalSeam()							# find 2nd: good
-sc.removeVerticalSeam(s) 							# remove vert #2					
-#pdb.set_trace()
-SeamCarverUtilities.printVerticalSeam(sc) 			# energy array: good; seam: bad
-
-print "remove vertical seam 4"
 s = sc.findVerticalSeam()
 sc.removeVerticalSeam(s)
-SeamCarverUtilities.printVerticalSeam(sc)
+print sc.width(), sc.height()
+
+# print "print vertical seam 3"
+# print sc.width(), sc.height()
+SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# s = sc.findVerticalSeam()
+# for i in range(sc.height()):
+# 	print s[i]
+
+s = sc.findVerticalSeam()
+sc.removeVerticalSeam(s)
+print sc.width(), sc.height()
+
+# print "print vertical seam 4"
+# print sc.width(), sc.height()
+SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# s = sc.findVerticalSeam()
+# for i in range(sc.height()):
+# 	print s[i]
+
+# print "print vertical seam 2"
+# # print sc._edgeTo
+# # print sc._distTo
+# s = sc.findVerticalSeam()
+# sc.removeVerticalSeam(s)  							
+# print sc.height(), sc.width()	
+#SeamCarverUtilities.printVerticalSeam(sc) 			
+# print
+
+# print "print vertical seam 3"
+# s = sc.findVerticalSeam()							
+# sc.removeVerticalSeam(s) 							
+# print sc.height(), sc.width()
+# # print sc._edgeTo
+# # print sc._distTo					
+# #pdb.set_trace()
+#SeamCarverUtilities.printVerticalSeam(sc) 			
+# print
+
+# print "remove vertical seam 4"
+# s = sc.findVerticalSeam()
+# sc.removeVerticalSeam(s)
+# print sc.height(), sc.width()
+# # print sc._edgeTo
+# # print sc._distTo
+# SeamCarverUtilities.printVerticalSeam(sc)
+
+# print "remove vertical seam 5"
+# s = sc.findVerticalSeam()
+# sc.removeVerticalSeam(s)
+# print sc.height(), sc.width()
+# SeamCarverUtilities.printVerticalSeam(sc)
 
 
 #print "remove {} rows".format(args.rowsToRemove)

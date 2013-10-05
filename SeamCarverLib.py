@@ -1,8 +1,8 @@
 from decimal import Decimal
 _INF = Decimal('infinity')
 _SENTINEL = -1
-_BORDER_ENERGY = 195075
-#_BORDER_ENERGY = 195705
+#_BORDER_ENERGY = 195075
+_BORDER_ENERGY = 195705
 import pdb
 
 class SeamCarver(object):
@@ -49,6 +49,8 @@ class SeamCarver(object):
 			seam[row] = v % self._width  # seam[row] = col
 			v = self._edgeTo[v]
 			row -= 1
+		self._edgeTo = []
+		self._distTo = []
 		return seam
 
 	def findHorizontalSeam(self):
@@ -67,6 +69,8 @@ class SeamCarver(object):
 			v = self._edgeTo[v]
 			row -= 1
 		self._exchDims()
+		#self._edgeTo = []
+		#self._distTo = []
 		return seam
 
 	def removeVerticalSeam(self, seam):
@@ -105,7 +109,9 @@ class SeamCarver(object):
 		
 
 	def _updateEnergy(self, R_chan, resized_width):
-		# re-calculate energy values for pixels on either side of seam
+		'''re-calculate energy values for pixels on either side of seam
+
+		R_chan is a list of R channels'''
 		for R in R_chan:
 			#pdb.set_trace()
 			# index = index of seam pixel wrt original image
@@ -129,15 +135,19 @@ class SeamCarver(object):
 				# seam pixel on top edge of original image
 				self._energy[index] = _BORDER_ENERGY
 				continue
-			elif (index > self._num_pixels - self._width and index < self._num_pixels):
+			elif (index >= self._num_pixels - self._width and index < self._num_pixels):
 				# seam pixel on bottom edge of original image
 				self._energy[index - row] = _BORDER_ENERGY
 				continue
 			else:
 				# pixel is not on a border of original image
 				# there is a new pixel in position resized_index (index wrt resized image); shifted in from the right
-				#pdb.set_trace()
-				self._energyGrad(resized_index, resized_width)
+
+				if (resized_index % resized_width == resized_width - 1):
+				# resized_index is on right border of resized img
+					self._energy[resized_index] = _BORDER_ENERGY
+				else:	
+					self._energyGrad(resized_index, resized_width)
 				
 				if ((resized_index - 1) % resized_width) == 0:
 					# pixel to left of seam is on left edge
@@ -216,7 +226,7 @@ class SeamCarver(object):
 			self._distTo[i] = 0
 			self._edgeTo[i] = self._source
 		# distTo[] is 0 for source pixel
-		self._distTo[self._num_pixels] = 0
+		self._distTo[self._source] = 0
 
 		# for each vertex (pixel), calculate edgeTo[], distTo[]
 		# start at row 1
@@ -229,13 +239,14 @@ class SeamCarver(object):
 				self._edgeTodistTo(v, transposed=transposed, edgeR=True)
 			else:
 				self._edgeTodistTo(v, transposed=transposed)
-		# for sink vertex
+		# edgeTo[sink] is vertex in last row with min energy
 		index, min_energy = min(enumerate(self._distTo[self._num_pixels - self._width:self._num_pixels]), key=lambda (x, y): y)
 		self._distTo[self._sink] = min_energy
 		self._edgeTo[self._sink] = (self._height - 1) * self._width + index
 
 
-	def _edgeTodistTo(self, v, edgeL=False, edgeR=False, transposed=False):
+
+	def _edgeTodistTo(self, v, transposed=False, edgeL=False, edgeR=False):
 		# returns pixel connected to v with min energy
 		if edgeL:
 			# left edge
@@ -252,6 +263,7 @@ class SeamCarver(object):
 			vLU = v - self._width - 1
 			vC = v - self._width
 			vRD = v - self._width + 1
+
 		# energy of pixels connected to v
 		if transposed:
 			(colU, rowU) = self._toGrid(vLU)
@@ -266,10 +278,13 @@ class SeamCarver(object):
 			eLU = self._energy[vLU]
 			eC = self._energy[vC]
 			eRD = self._energy[vRD]
+			#print (eLU, vLU), (eC, vC), (eRD, vRD)
+		# find min distance and its associated vertex
+		dist, from_vertex = min((self._distTo[vLU] + eLU, vLU), (self._distTo[vC] + eC, vC), (self._distTo[vRD] + eRD, vRD))
+		#e, vertex = min([(eC, vC), (eLU, vLU), (eRD, vRD)])
+		self._edgeTo[v] = from_vertex
+		self._distTo[v] = dist
 
-		e, vertex = min([(eLU, vLU), (eC, vC), (eRD, vRD)])
-		self._edgeTo[v] = vertex
-		self._distTo[v] = self._distTo[vertex] + e
 
 
 
