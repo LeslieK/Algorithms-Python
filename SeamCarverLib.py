@@ -37,47 +37,73 @@ class SeamCarver(object):
 		if self._isValid(col, row):
 			return self._energy[self._toLinear(col, row)]
 
-	def findVerticalSeam(self):
+	def findVerticalSeam(self, transposed=False):
 		"return vertical seam in image"
 		# vertical seam = sequence of cols; seam[0] is col of row 0
 		# row-indexed seam
 		seam = [-1 for _ in range(self._height)]
-		self._buildGraph(transposed=False)
+		self._buildGraph(transposed)
 		row = self._height - 1
 		v = self._edgeTo[self._sink]
 		while (v != self._source):
 			seam[row] = v % self._width  # seam[row] = col
 			v = self._edgeTo[v]
 			row -= 1
-		self._edgeTo = []
-		self._distTo = []
+		#self._edgeTo = []
+		#self._distTo = []
 		return seam
 
-	def findHorizontalSeam(self):
+	def findHorizontalSeam(self, transposed=True):
 		"return horizontal seam in image"
 		# tranpose dimensions
 		self._exchDims()
 
 		# horizontal seam = sequence of rows; seam[0] is row of col 0
 		# col-indexed seam
-		seam = [-1 for _ in range(self._height)]
-		self._buildGraph(transposed=True)
-		row = self._height - 1
-		v = self._edgeTo[self._sink]
-		while (v != self._source):
-			seam[row] = v % self._width  # seam[row] = col
-			v = self._edgeTo[v]
-			row -= 1
+		seam = self.findVerticalSeam(transposed)
 		self._exchDims()
 		#self._edgeTo = []
 		#self._distTo = []
 		return seam
 
-	def removeVerticalSeam(self, seam):
+	def _shiftImgUp(self, (col, row)):
+		"remove horizontal seam in img and energy array by shifting up each col"
+		for r in range(row, self._height - 1):
+			i = self._width * r + col
+			rchan_index = i*3
+			self._img[rchan_index] = self._img[rchan_index + self._width*3]
+			self._img[rchan_index + 1] = self._img[rchan_index + 1 + self._width*3]
+			self._img[rchan_index + 2] = self._img[rchan_index + 2 + self._width*3]
+			self._energy[i] = self._energy[i + self._width]
+			print 'i={} i+width={}'.format(i, i + self._width)
+
+	def _removeSeam(self, seam, vertical=True):
+		"remove seam of pixels from image"
+		if vertical:
+			if (len(seam) != self._height or self._height == 0 or self._width == 2):
+				raise ValueError
+			indexes_to_remove = map(lambda (r, col): self._width * r + col, enumerate(seam))
+		else:
+			# remove horizontal seam
+			if(len(seam)) != self._width or self._width < 2:
+				raise ValueError
+			print 'image before removing pixels: {}'.format(self._img[::3])
+			print
+			#indexes_to_remove = map(lambda (col, r): self._width * r + col, enumerate(seam))
+			# remove seam pixels from image
+			map(self._shiftImgUp, [t for t in enumerate(seam)])
+			self._height -= 1
+			self._num_pixels = self._width * self._height
+			self._source = self._num_pixels
+			self._sink = self._source + 1
+			print 'image after removing pixels: {}'.format(self._img[::3])
+
+
+	def removeVerticalSeam(self, seam, transposed=False):
 		"remove vertical seam of pixels from image"
 		if (len(seam) != self._height or self._height == 0 or self._width == 2):
 			raise ValueError
-		indexes_to_remove = map(lambda (i, col): self._width * i + col, enumerate(seam))
+		indexes_to_remove = map(lambda (r, col): self._width * r + col, enumerate(seam))
 		
 		# img array ; each pixel is represented by 3 or 4 unsigned integers
 		R_chan =  map(lambda x: x * self._num_channels, indexes_to_remove)
@@ -90,25 +116,90 @@ class SeamCarver(object):
 		pixels_to_remove.extend(G_chan)
 		pixels_to_remove.extend(B_chan)
 		if self._num_channels == 4:
-			Alpha_chan = map(lambda x: x + 3, R_chan)
-			pixels_to_remove.extend(Alpha_chan)
+			alpha_chan = map(lambda x: x + 3, R_chan)
+			pixels_to_remove.extend(alpha_chan)
+
+		print 'to remove: {}'.format(indexes_to_remove)
+		print
+		print 'image before removing pixels: {}'.format(self._img[::3])
+		print
 
 		# remove energy values associated with removed pixels
-		self._energy = map(lambda (x, y): y, filter(lambda (x, y): x not in indexes_to_remove, enumerate(self._energy)))
+		if not transposed:
+			self._energy = map(lambda (x, y): y, filter(lambda (x, y): x not in indexes_to_remove, enumerate(self._energy)))
+		# else:
+		# # 	# [(c, r), (c, r), ...]
+		# 	cols_rows = map(self._toGrid, indexes_to_remove)
+		# 	indexes_to_remove = [self._height * t[0] + t[1] for t in cols_rows]
+		# 	self._energy = map(lambda (x, y): y, filter(lambda (x, y): x not in indexes_to_remove, enumerate(self._energy)))
+
 		# remove seam pixels from image
 		self._img = map(lambda (x, y): y, filter(lambda (x, y): x not in pixels_to_remove, enumerate(self._img)))
 		resized_width = self._width - 1
 		resized_num_pix = resized_width * self._height
-		# update energy array
-		self._updateEnergy(R_chan, resized_width)
+		print 'image after removing pixels: {}'.format(self._img[::3])
+
+		if not transposed:
+			# update energy array
+			self._updateEnergy(R_chan, resized_width, transposed)
+		
 		# update image dimension, number of pixels
 		self._width = resized_width
 		self._num_pixels = resized_num_pix
 		self._source = self._num_pixels
 		self._sink = self._source + 1
+	
+	def removeHorizontalSeam(self, seam, transposed=True):
+		"remove horizontal seam of pixels"
+		print 'img: {} x {}'.format(self._width, self._height)
+		self._removeSeam(seam, vertical=False)
+		print 'img: {} x {}'.format(self._width, self._height)
+
+		# update energy
+		for col, row in enumerate(seam):
+			index = self._width * row + col
+			print 'index: {} col: {} row: {}'.format(index, col, row)
+
+			if col == 0:
+				# index on left edge
+				#self._energy[index] - _BORDER_ENERGY
+				print 'left edge: {}, energy: {}'.format(index, _BORDER_ENERGY)
+				
+			elif col == self._width - 1:
+				# index on right edge
+				#self._energy[index] - _BORDER_ENERGY
+				print 'right edge: {}, energy: {}'.format(index, _BORDER_ENERGY)
+				
+			elif row == 0:
+				# index on top edge:
+				#self._energy[index] - _BORDER_ENERGY
+				print 'top edge: {}, energy: {}'.format(index, _BORDER_ENERGY)
+				
+			elif row == self._height - 1:
+				# index on bottom edge; row above bottom edge becomes border
+				self._energy[index - self._width] = _BORDER_ENERGY
+				print 'bottom edge: {}, energy:'.format(index, _BORDER_ENERGY)
+				
+			else:
+				# index is not on boundary
+				# update energy of pixel in seam position
+				self._energyGrad(index, self._width, transposed=False)
+				print 'index: {}, energy: {}'.format(index, self._energy[index])
+				
+				if row > 1:
+					# update energy of pixel above seam position
+					self._energyGrad(index - self._width, self._width, transposed=False)
+					print 'index: {}, energy: {}'.format(index-1, self._energy[index-1])
+
+					
+		
+		# set bottom row to BORDER_ENERGY
+		# for i in range(self._width * (self._height - 1), self._num_pixels):
+		# 	self._energy[i] = _BORDER_ENERGY
+
 		
 
-	def _updateEnergy(self, R_chan, resized_width):
+	def _updateEnergy(self, R_chan, resized_width, transposed):
 		'''re-calculate energy values for pixels on either side of seam
 
 		R_chan is a list of R channels'''
@@ -116,28 +207,47 @@ class SeamCarver(object):
 			#pdb.set_trace()
 			# index = index of seam pixel wrt original image
 			index = R / self._num_channels
-			# row of seam pixel wrt original image
-			row = self._toGrid(index)[1]
+			col, row = self._toGrid(index)
+			# col, row of seam pixel wrt original image
 			# resized_index = index of pixel on right of seam in resized image
-			resized_index = index - row
+			if not transposed:
+				resized_index = index - row
+			else:
+				resized_index = index - row
 
 			# is seam pixel on a border of original image?
 			if (index % self._width) == self._width - 1:
 				# seam pixel is on right edge of original image
 				# pixel on left of seam pixel is border in resized image
-				self._energy[index - row - 1] = _BORDER_ENERGY
+				if not transposed:
+					self._energy[index - row - 1] = _BORDER_ENERGY
+				else:
+					r, c = self._toGrid(index - row - 1)
+					self._energy[self._height * c + r] = _BORDER_ENERGY
 				continue
 			elif (index % self._width) == 0:
 				# seam pixel on left edge of original image
-				self._energy[index - row] = _BORDER_ENERGY
+				if not transposed:
+					self._energy[index - row] = _BORDER_ENERGY
+				else:
+					r, c = self._toGrid(index - row)
+					self._energy[self._height * c + r] = _BORDER_ENERGY
 				continue
 			elif (index < self._width - 1):
 				# seam pixel on top edge of original image
-				self._energy[index] = _BORDER_ENERGY
+				if not transposed:
+					self._energy[index] = _BORDER_ENERGY
+				else:
+					r, c = self._toGrid(index)
+					self._energy[self._height * c + r] = _BORDER_ENERGY
 				continue
 			elif (index >= self._num_pixels - self._width and index < self._num_pixels):
 				# seam pixel on bottom edge of original image
-				self._energy[index - row] = _BORDER_ENERGY
+				if not transposed:
+					self._energy[index - row] = _BORDER_ENERGY
+				else:
+					r, c = self._toGrid(index - row)
+					self._energy[self._height * c + r] = _BORDER_ENERGY
 				continue
 			else:
 				# pixel is not on a border of original image
@@ -145,21 +255,34 @@ class SeamCarver(object):
 
 				if (resized_index % resized_width == resized_width - 1):
 				# resized_index is on right border of resized img
-					self._energy[resized_index] = _BORDER_ENERGY
-				else:	
-					self._energyGrad(resized_index, resized_width)
-				
+					if not transposed:
+						self._energy[resized_index] = _BORDER_ENERGY
+					else:
+						r = resized_index / resized_width
+						c = resized_index % resized_width
+						self._energy[self._height * c + r] = _BORDER_ENERGY
+				else:
+					# resized_index refers to an inner pixel in resized image	
+					self._energyGrad(resized_index, resized_width, transposed)
 				if ((resized_index - 1) % resized_width) == 0:
 					# pixel to left of seam is on left edge
-					self._energy[resized_index - 1] = _BORDER_ENERGY
+					if not transposed:
+						self._energy[resized_index - 1] = _BORDER_ENERGY
+					else:
+						r = (resized_index - 1) / resized_width
+						c = (resized_index - 1) % resized_width
+						self._energy[self._height * c + r] = _BORDER_ENERGY
 				else:
-					self._energyGrad(resized_index - 1, resized_width)
+					self._energyGrad(resized_index - 1, resized_width, transposed)
 			
-	def _energyGrad(self, index, width):
-		"Calculate energy of pixel in resized image. Update self._energy"
+	def _energyGrad(self, index, width, transposed):
+		'''Calculate energy of pixel in resized image. Update self._energy
+
+		uses resized_index and resized_width'''
 
 		left = (index  - 1) * self._num_channels
 		right = (index + 1) * self._num_channels
+		print 'left: {}, right: {}'.format(left, right)
 
 		RL = self._img[left]
 		GL = self._img[left + 1]
@@ -171,6 +294,7 @@ class SeamCarver(object):
 
 		up = (index  - width) * self._num_channels
 		down = (index + width) * self._num_channels
+		print 'up: {}, down: {}'.format(up, down)
 
 		RU = self._img[up]
 		GU = self._img[up + 1]
@@ -180,7 +304,14 @@ class SeamCarver(object):
 		BD = self._img[down + 2]
 		gradV = self._diff_squared(RU, RD) + self._diff_squared(GU, GD) + self._diff_squared(BU, BD)
 
-		self._energy[index] = gradH + gradV
+		if not transposed:
+			self._energy[index] = gradH + gradV
+			print 'index: {}, energy: {}'.format(index, gradH + gradV)
+		else:
+			r = index / width
+			c = index % width
+			self._energy[self._height * c + r] = gradH + gradV
+			print 'index: {}, width: {}, energy_index: {}, r:{}, c:{}, calc_energy: {}'.format(index, width, self._height * c + r, c, r, gradH + gradV)
 
 	def _diff_squared(self, x, y):
 		return (x - y)**2
@@ -215,7 +346,7 @@ class SeamCarver(object):
 			else:
 				return True
 
-	def _buildGraph(self, transposed=False):
+	def _buildGraph(self, transposed):
 		"pixels are nodes; edges define precedence constraints in a seam"
 		# graph data structures
 		self._edgeTo = [_SENTINEL for _ in range(self._num_pixels + 2)]	# add 2 for source, sink pixels
@@ -233,12 +364,12 @@ class SeamCarver(object):
 		for v in range(self._width, self._num_pixels):
 			if (v % self._width == 0):
 				# pixel is on left edge
-				self._edgeTodistTo(v, transposed=transposed, edgeL=True)
+				self._edgeTodistTo(v, transposed, edgeL=True)
 			elif (v % self._width == self._width - 1):
 				# pixel is on right edge
-				self._edgeTodistTo(v, transposed=transposed, edgeR=True)
+				self._edgeTodistTo(v, transposed, edgeR=True)
 			else:
-				self._edgeTodistTo(v, transposed=transposed)
+				self._edgeTodistTo(v, transposed)
 		# edgeTo[sink] is vertex in last row with min energy
 		index, min_energy = min(enumerate(self._distTo[self._num_pixels - self._width:self._num_pixels]), key=lambda (x, y): y)
 		self._distTo[self._sink] = min_energy
@@ -246,7 +377,7 @@ class SeamCarver(object):
 
 
 
-	def _edgeTodistTo(self, v, transposed=False, edgeL=False, edgeR=False):
+	def _edgeTodistTo(self, v, transposed, edgeL=False, edgeR=False):
 		# returns pixel connected to v with min energy
 		if edgeL:
 			# left edge

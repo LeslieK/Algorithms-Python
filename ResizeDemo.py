@@ -19,43 +19,62 @@ sc = SeamCarverLib.SeamCarver(pic)
 
 print "print vertical seam 1"
 print sc.width(), sc.height()
-SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+SeamCarverUtilities.printVerticalSeam(sc)
+SeamCarverUtilities.distToArray(sc)
+print
+#SeamCarverUtilities.printVerticalSeamEnergy(sc)			
 #s = sc.findVerticalSeam()
 # for i in range(sc.height()):
 # 	print s[i]
+
+print "print horizontal seam 1"
+SeamCarverUtilities.printHorizontalSeam(sc)
+SeamCarverUtilities.distToArray(sc)
+print
+
+print "remove horizontal seam 1"
+s = sc.findHorizontalSeam()
+sc.removeHorizontalSeam(s)
+SeamCarverUtilities.printHorizontalSeam(sc)
+SeamCarverUtilities.distToArray(sc)
+
 			
-s = sc.findVerticalSeam()				
-sc.removeVerticalSeam(s)
+# s = sc.findVerticalSeam()				
+# sc.removeVerticalSeam(s)
 
-# print "print vertical seam 2"
-print sc.width(), sc.height()
-SeamCarverUtilities.printVerticalSeamEnergy(sc)			
-# s = sc.findVerticalSeam()
-# for i in range(sc.height()):
-# 	print s[i]
-# # print sc._edgeTo
-# # print sc._distTo
-# SeamCarverUtilities.printVerticalSeam(sc) 			
-# print
-
-s = sc.findVerticalSeam()
-sc.removeVerticalSeam(s)
-print sc.width(), sc.height()
-
-# print "print vertical seam 3"
+# # print "print vertical seam 2"
 # print sc.width(), sc.height()
-SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# SeamCarverUtilities.printVerticalSeam(sc)
+# #SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# # s = sc.findVerticalSeam()
+# # for i in range(sc.height()):
+# # 	print s[i]
+# # # print sc._edgeTo
+# # # print sc._distTo
+# # SeamCarverUtilities.printVerticalSeam(sc) 			
+# # print
+
 # s = sc.findVerticalSeam()
-# for i in range(sc.height()):
-# 	print s[i]
-
-s = sc.findVerticalSeam()
-sc.removeVerticalSeam(s)
-print sc.width(), sc.height()
-
-# print "print vertical seam 4"
+# sc.removeVerticalSeam(s)
 # print sc.width(), sc.height()
-SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+
+# # print "print vertical seam 3"
+# # print sc.width(), sc.height()
+# SeamCarverUtilities.printVerticalSeam(sc)
+# SeamCarverUtilities.distToArray(sc)
+# #SeamCarverUtilities.printVerticalSeamEnergy(sc)			
+# # s = sc.findVerticalSeam()
+# # for i in range(sc.height()):
+# # 	print s[i]
+
+# s = sc.findVerticalSeam()
+# sc.removeVerticalSeam(s)
+# print sc.width(), sc.height()
+
+# # print "print vertical seam 4"
+# # print sc.width(), sc.height()
+# SeamCarverUtilities.printVerticalSeam(sc)
+#SeamCarverUtilities.printVerticalSeamEnergy(sc)			
 # s = sc.findVerticalSeam()
 # for i in range(sc.height()):
 # 	print s[i]
