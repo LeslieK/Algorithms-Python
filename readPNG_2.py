@@ -3,8 +3,8 @@ import png, array
 
 class Picture(object):
 	"reads a png image from a filename"
-	BORDER_ENERGY = 195075
-	#BORDER_ENERGY = 195705
+	#BORDER_ENERGY = 195075
+	BORDER_ENERGY = 195705
 	
 	
 	def __init__(self, pngfilename):
